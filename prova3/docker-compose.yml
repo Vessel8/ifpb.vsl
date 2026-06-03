@@ -1,0 +1,44 @@
+services:
+  mysql:
+    image: 'mysql:8.1'
+    container_name: db
+    volumes:
+      - vol_dados_courses_vsl:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "x~38tq-<X2EH0v<v]n55jbLAMnq0>pTB6U8"
+      MYSQL_DATABASE: "db_courses_vsl"
+      MYSQL_USER: "VSL018"
+      MYSQL_PASSWORD: "£8h%8dV5V6#"
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - courses-network
+
+  courses-app:
+    image: vsl018/courses-app:latest 
+    container_name: courses
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - '8010:8010'
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/db_courses_vsl"
+      SPRING_DATASOURCE_USERNAME: "VSL018"
+      SPRING_DATASOURCE_PASSWORD: "£8h%8dV5V6#"
+    networks:
+      - courses-network
+
+volumes:
+  vol_dados_courses_vsl:
+    name: "vol_dados_courses_vsl"
+
+networks:
+  courses-network:
+    name: "courses-network"
+    driver: bridge

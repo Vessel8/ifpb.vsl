@@ -1,0 +1,48 @@
+package com.vslifb.prova3p3.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
+
+@Configuration
+@EnableWebSecurity // Enables web security and tells Spring to use this class for security configuration. Spring looks for a SecurityFilterChain bean defined in the configuration class
+public class SecurityConfig {
+
+    // Customized handler
+    @Autowired
+    private AccessDeniedHandler accessDeniedHandler;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain( HttpSecurity http ) throws Exception {
+        http
+                .csrf( Customizer.withDefaults() ) // Enable CSRF protection; Uses Spring Security’s default session-based CSRF handling.
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/courses", "/login").permitAll() // Public pages
+                        .requestMatchers("/courses/add", "/courses/edit/**", "/courses/delete/**").hasRole("ADMIN") // Admin-only actions
+                        .anyRequest().authenticated() // Everything else requires authentication
+                )
+                .exceptionHandling(exception -> exception
+                        .accessDeniedHandler(accessDeniedHandler) // Custom error message for sketchy users playing with the URL
+                )
+                .formLogin(login -> login
+                        .loginPage("/login") // Custom login page
+                        .defaultSuccessUrl("/courses", true) // Redirect after login (Setting a default success URL for the login form)
+                        .failureUrl( "/login?error" ) // Redirect after login failed (default behaviour of wrong username/password)
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")  // Define the URL that triggers logout
+                        .logoutSuccessUrl("/login?logout") // Redirect after logout success (default behaviour of Logout success)
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll()
+                );
+
+        return http.build();
+    }
+}
